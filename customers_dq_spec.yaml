@@ -1,0 +1,13 @@
+# Data Quality Scan Spec for customers
+# Generated from Data Profiling results
+data_quality_spec:
+  rules:
+    - column: id
+      dimension: Uniqueness
+      non_null_expectation: {}
+      uniqueness_expectation: {}
+    - column: email
+      dimension: Completeness
+      non_null_expectation: {}
+      regex_expectation:
+        regex: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
