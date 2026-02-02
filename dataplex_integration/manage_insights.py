@@ -6,8 +6,7 @@ from google.protobuf import struct_pb2
 
 # Configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
-LOCATION = "europe-west1" # For Scans
-#BQ_LOCATION = "eu" # For BigQuery entries and tables
+LOCATION = "europe-west1"
 DATASET_ID = "retail_synthetic_data"
 
 def create_and_run_scan(table_name, scan_type):

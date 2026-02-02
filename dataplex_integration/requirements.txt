@@ -1,3 +1,4 @@
+requests
 google-cloud-dataplex
 google-cloud-bigquery
-pandas
+google-cloud-storage

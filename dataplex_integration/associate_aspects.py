@@ -4,8 +4,8 @@ from google.protobuf import struct_pb2
 
 # Configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
-LOCATION = "global" # For Aspect Types
-BQ_LOCATION = "eu" # For BigQuery entries
+LOCATION = "europe-west1" # For Aspect Types
+BQ_LOCATION = "europe-west1" # For BigQuery entries
 DATASET_ID = "retail_synthetic_data"
 
 def create_aspect_type():

@@ -8,7 +8,7 @@ import pandas as pd
 # Configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
 DATASET_ID = "retail_synthetic_data"
-LOCATION = "EU"
+LOCATION = "europe-west1"
 
 client = bigquery.Client(project=PROJECT_ID)
 fake = Faker(['en_GB', 'fr_FR', 'de_DE', 'sv_SE']) # European locales
