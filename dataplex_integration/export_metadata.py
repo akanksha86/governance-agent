@@ -88,25 +88,33 @@ def wait_for_job(job_info):
         response.raise_for_status()
         status = response.json()
         
-        # Check operation status
         done = status.get("done", False)
-        
-        # Check metadata for state (optional, for logging)
         metadata = status.get("metadata", {})
-        state = metadata.get("state")
+        
+        # When an operation is done, the actual MetadataJob is in the 'response' field
+        state = None
+        if done:
+            job_response = status.get("response", {})
+            job_status = job_response.get("status", {})
+            state = job_status.get("state")
+        else:
+            state = metadata.get("state") # During operation, state might be in metadata
+        
         print(f"Operation done: {done}, Job state: {state}")
         
         if done:
-            if "error" in status:
-                print(f"Job failed: {status['error']}")
-            else:
+            if state == "SUCCEEDED":
                 print(f"Job completed successfully.")
+            elif "error" in status:
+                print(f"Job failed with operation error: {status['error']}")
+            else:
+                print(f"Job finished with state: {state}")
             break
 
         print("Job still running, waiting 10 seconds...")
         time.sleep(10)
     
-    return job_info
+    return status
 
 def create_bigquery_external_table():
     client = bigquery.Client(project=PROJECT_ID)
@@ -201,13 +209,23 @@ if __name__ == "__main__":
     create_gcs_bucket()
     
     # 2. Run Metadata Export Job
-    job_info = run_metadata_export()
-    if job_info:
-        wait_for_job(job_info)
+    op_status = run_metadata_export()
+    if op_status:
+        wait_for_job(op_status)
     
-    # 3. Create BigQuery External Table
-    create_bigquery_external_table()
+    # Check if we actually have files in GCS before proceeding with BigQuery
+    # This prevents the 'BadRequest' error if no metadata was harvested yet.
+    storage_client = storage.Client(project=PROJECT_ID)
+    blobs = list(storage_client.list_blobs(GCS_BUCKET_NAME, max_results=1))
     
-    # 4. Create Native BigQuery Table
-    create_native_table()
+    if not blobs:
+        print("\nWARNING: No metadata files found in the export bucket.")
+        print("This usually happens if Dataplex hasn't finished harvesting your BigQuery tables yet.")
+        print("Wait a few minutes and try running this script again.")
+    else:
+        # 3. Create BigQuery External Table
+        create_bigquery_external_table()
+        
+        # 4. Create Native BigQuery Table
+        create_native_table()
 
