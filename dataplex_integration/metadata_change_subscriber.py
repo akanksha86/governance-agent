@@ -10,9 +10,9 @@ from datetime import datetime, timedelta
 
 # Configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
-SUBSCRIPTION_ID = os.environ.get("METADATA_SUBSCRIPTION_ID", "dataplex-metadata-changes-sub")
-BQ_DATASET = os.environ.get("METADATA_BQ_DATASET", "governance_export")
-BQ_TABLE = os.environ.get("METADATA_BQ_TABLE", "metadata_changes")
+SUBSCRIPTION_ID = "dataplex-metadata-changes-sub"
+BQ_DATASET = "governance_export"
+BQ_TABLE = "metadata_changes"
 
 def get_access_token():
     credentials, project = google.auth.default()
@@ -24,12 +24,15 @@ def fetch_dataplex_entry(entry_name):
     """Fetch the current state of an entry from Dataplex."""
     access_token = get_access_token()
     headers = {"Authorization": f"Bearer {access_token}"}
-    url = f"https://dataplex.googleapis.com/v1/{entry_name}"
+    url = f"https://dataplex.googleapis.com/v1/{entry_name}?view=ALL"
     
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
-            return response.json()
+            res_json = response.json()
+            aspect_keys = list(res_json.get("aspects", {}).keys())
+            print(f"Fetched entry {entry_name}. Aspects: {aspect_keys}", flush=True)
+            return res_json
         elif response.status_code == 404:
             print(f"Entry {entry_name} not found (might have been deleted).", flush=True)
             return None
@@ -107,11 +110,9 @@ def callback(message):
     
     try:
         attributes = dict(message.attributes)
-        print(f"Attributes: {attributes}", flush=True)
         
         # The data payload contains aspect change details
         data_json = message.data.decode("utf-8")
-        print(f"Data Payload: {data_json}", flush=True)
         data = json.loads(data_json) if data_json else {}
         
         # Dataplex uses various names for entry info across attributes and payload

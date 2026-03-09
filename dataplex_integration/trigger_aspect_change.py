@@ -4,8 +4,9 @@ from google.protobuf import struct_pb2
 
 # Configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
-LOCATION = os.environ.get("DATAPLEX_LOCATION", "europe-west1")
-DATASET_ID = os.environ.get("BQ_DATASET", "retail_synthetic_data")
+PROJECT_NUMBER = os.environ.get("GOOGLE_CLOUD_PROJECT_NUMBER")
+LOCATION = "europe-west1"
+DATASET_ID = "retail_synthetic_data"
 TABLE_ID = "customers"
 ASPECT_TYPE_ID = "data-governance-aspect"
 
@@ -20,12 +21,13 @@ def update_aspect():
     
     # Parse aspect type name to get the correct key format for the aspects map
     # The key is project.location.aspect_type_id
-    aspect_key = f"{PROJECT_ID}.{LOCATION}.{ASPECT_TYPE_ID}"
+    project_num = PROJECT_NUMBER or "575273989588"
+    aspect_key = f"{project_num}.{LOCATION}.{ASPECT_TYPE_ID}"
     
     # Update some data in the aspect
     aspect_data = struct_pb2.Struct()
     aspect_data.update({
-        "owner": "Data Security Team (Updated)",
+        "owner": "Data Security Team (Flattened Fix)",
         "contains_pii": True,
         "layer": "raw",
         "environment": "Prod"

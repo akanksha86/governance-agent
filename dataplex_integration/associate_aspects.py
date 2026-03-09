@@ -4,9 +4,10 @@ from google.protobuf import struct_pb2
 
 # Configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
-LOCATION = os.environ.get("DATAPLEX_LOCATION", "europe-west1") # For Aspect Types
-BQ_LOCATION = os.environ.get("BQ_LOCATION", "europe-west1") # For BigQuery entries
-DATASET_ID = os.environ.get("BQ_DATASET", "retail_synthetic_data")
+PROJECT_NUMBER = os.environ.get("GOOGLE_CLOUD_PROJECT_NUMBER")
+LOCATION = "europe-west1" # For Aspect Types
+BQ_LOCATION = "europe-west1" # For BigQuery entries
+DATASET_ID = "retail_synthetic_data"
 
 def create_aspect_type():
     client = dataplex_v1.CatalogServiceClient()
@@ -78,28 +79,36 @@ def tag_table(table_name, aspect_type_name, owner, contains_pii, layer, environm
         "environment": environment
     })
     
-    entry = dataplex_v1.Entry()
-    entry.name = entry_name
-    
-    # Parse aspect type name to get the correct key format for the aspects map
+    # Fetch first to get ETag and full state
+    try:
+        request = dataplex_v1.GetEntryRequest(name=entry_name, view=dataplex_v1.EntryView.FULL)
+        entry = client.get_entry(request=request)
+    except Exception as e:
+        print(f"Failed to fetch entry {table_name}: {e}")
+        return
+
+    # Add/Update aspect
+    # Note: Dataplex expects project NUMBER in the canonical aspect key
+    aspect_project_number = PROJECT_NUMBER or "575273989588" # Fallback to demo project if not set
     parts = aspect_type_name.split('/')
-    if len(parts) >= 6:
-        project = parts[1]
-        location = parts[3]
-        aspect_type_id = parts[5]
-        aspect_key = f"{project}.{location}.{aspect_type_id}"
-    else:
-        aspect_key = aspect_type_name
+    location = parts[3]
+    aspect_type_id = parts[5]
+    aspect_key = f"{aspect_project_number}.{location}.{aspect_type_id}"
     
-    entry.aspects = {
-        aspect_key: dataplex_v1.Aspect(
-            aspect_type=aspect_type_name,
-            data=aspect_data
-        )
-    }
+    aspect = dataplex_v1.Aspect(
+        aspect_type=aspect_type_name,
+        data=aspect_data
+    )
+    entry.aspects[aspect_key] = aspect
     
     try:
-        client.update_entry(entry=entry, update_mask={"paths": [f"aspects"]})
+        # Use UpdateEntryRequest to specify aspect_keys
+        update_request = dataplex_v1.UpdateEntryRequest(
+            entry=entry,
+            update_mask={"paths": ["aspects"]},
+            aspect_keys=[aspect_key]
+        )
+        client.update_entry(request=update_request)
         print(f"Updated harvested entry and tagged {table_name}")
     except Exception as e:
         print(f"Failed to update entry for {table_name}: {e}")

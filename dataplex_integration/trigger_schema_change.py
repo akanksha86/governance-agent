@@ -1,10 +1,13 @@
 import os
+import time
 from google.cloud import bigquery
 
 # Configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
-DATASET_ID = os.environ.get("BQ_DATASET", "retail_synthetic_data")
+DATASET_ID = "retail_synthetic_data"
 TABLE_ID = "customers"
+# Dynamic column name to avoid 'already exists' error on repeated runs
+NEW_COLUMN_NAME = f"evolution_check_{int(time.time())}"
 
 def add_column_to_table():
     client = bigquery.Client(project=PROJECT_ID)
@@ -13,12 +16,12 @@ def add_column_to_table():
     
     # Add a new column to trigger a schema change in Dataplex
     new_schema = list(table.schema)
-    new_schema.append(bigquery.SchemaField("migration_flag", "BOOL", mode="NULLABLE"))
+    new_schema.append(bigquery.SchemaField(NEW_COLUMN_NAME, "STRING", mode="NULLABLE"))
     
     table.schema = new_schema
     client.update_table(table, ["schema"])
     
-    print(f"Added column 'migration_flag' to {PROJECT_ID}.{DATASET_ID}.{TABLE_ID}")
+    print(f"Added column '{NEW_COLUMN_NAME}' to {PROJECT_ID}.{DATASET_ID}.{TABLE_ID}")
     print("Dataplex should detect this change during the next harvest/scan and publish a notification.")
 
 if __name__ == "__main__":

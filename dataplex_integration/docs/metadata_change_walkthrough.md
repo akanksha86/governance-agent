@@ -85,3 +85,58 @@ FROM `governance_export.metadata_changes`
 ORDER BY event_timestamp DESC 
 LIMIT 10;
 ```
+
+## Metadata Evolution Visualization
+
+I've implemented a new visualization layer to show how metadata evolves over time, specifically for business users to track schema changes and aspect associations.
+
+### 1. Data Processing View
+Created a BigQuery view `metadata_evolution` that flattens snapshots for easier consumption:
+- [metadata_evolution_view.sql](file:///Users/akankshapb/work/governance-agent/dataplex_integration/metadata_evolution_view.sql)
+
+### 2. UI Dashboard (Prototype)
+Initialized a React application with a premium "Metadata Evolution" dashboard:
+- **Location**: `governance_agent/react_ui`
+- **Features**:
+  - **Activity Feed**: A vertical timeline of metadata events (Who made the change, when, and what).
+  - **Visual Diff View**: Comparison between snapshots highlighting added/changed schema fields.
+  - **Governance Stats**: Summary of associated domain aspects (e.g., Ownership, Sensitivity).
+
+![Evolution Mockup](/Users/akankshapb/.gemini/jetski/brain/c4392645-6213-450e-9e44-86eb2342baf1/metadata_evolution_mockup_1773072465198.png)
+
+### How to Run the Visualization Dashboard
+
+To run the React-based Metadata Evolution Dashboard locally:
+
+1.  **Navigate to the UI directory**:
+    ```bash
+    cd governance_agent/react_ui
+    ```
+2.  **Install dependencies**:
+    ```bash
+    npm install
+    ```
+3.  **Start the development server**:
+    ```bash
+    npm start
+    ```
+4.  **View in browser**:
+    Open [http://localhost:3000](http://localhost:3000)
+
+
+### How to Run the Backend API
+
+To run the FastAPI bridge between the UI and BigQuery:
+
+1.  **Install dependencies**:
+    ```bash
+    pip install -r governance_agent/backend/requirements.txt
+    ```
+2.  **Start the backend server**:
+    ```bash
+    export GOOGLE_CLOUD_PROJECT="your-project-id"
+    python3 governance_agent/backend/main.py
+    ```
+
+> [!NOTE]
+> The React UI is already pre-configured to fetch data from `http://localhost:8000/api/evolution/customers`. Ensure both the backend and frontend are running for the live experience.

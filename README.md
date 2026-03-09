@@ -40,10 +40,20 @@ A React-based agent using the ADK toolkit to provide governance insights.
    ```bash
    cd ../dataplex_integration
    pip install -r requirements.txt
+   
+   # Set environment variables
+   export GOOGLE_CLOUD_PROJECT=your-project-id
+   export GOOGLE_CLOUD_PROJECT_NUMBER=$(gcloud projects describe $GOOGLE_CLOUD_PROJECT --format="value(projectNumber)")
+   
+   # Setup and Tagging
    python associate_aspects.py
-   python manage_scans.py
-   python manage_insights.py
-   python export_metadata.py
+   
+   # Deploy Metadata Evolution View
+   chmod +x deploy_evolution_view.sh
+   ./deploy_evolution_view.sh
+   
+   # Start Metadata Change Subscriber (Run in background)
+   python metadata_change_subscriber.py
    ```
 
 3. **Governance Agent**:
