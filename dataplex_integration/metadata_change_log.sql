@@ -13,6 +13,7 @@ CREATE OR REPLACE TABLE `governance_export.metadata_changes` (
   entry_type STRING,
   changed_aspects ARRAY<STRING>,
   metadata_snapshot STRING, -- Store as JSON string for now, or JSON type if preferred
+  user_email STRING,
   summary STRING
 )
 PARTITION BY DATE(event_timestamp)

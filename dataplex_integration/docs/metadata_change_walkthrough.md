@@ -78,11 +78,3 @@ FROM `governance_export.metadata_changes`
 ORDER BY event_timestamp DESC 
 LIMIT 10;
 ```
-
-## Generic Nature of the Solution
-
-This solution is designed to be **highly generic** and resource-agnostic:
-- **Universal Entry Support**: By using the `entry_name` attribute from the Pub/Sub message, it automatically captures changes for BigQuery tables, GCS files, and custom entries without any modification.
-- **Dynamic Aspect Handling**: All aspects (schema, storage, lineage, custom metadata) are captured in a single `metadata_snapshot` column as JSON, making it future-proof against new metadata types.
-- **Project-Level Scope**: The Dataplex Metadata Feed is configured at the project level, ensuring all activity within the project's catalog is monitored.
-

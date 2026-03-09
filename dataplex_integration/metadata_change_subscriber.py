@@ -5,6 +5,8 @@ from google.cloud import pubsub_v1
 from google.cloud import bigquery
 import google.auth
 import google.auth.transport.requests
+from google.cloud import logging as cloud_logging
+from datetime import datetime, timedelta
 
 # Configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
@@ -29,14 +31,50 @@ def fetch_dataplex_entry(entry_name):
         if response.status_code == 200:
             return response.json()
         elif response.status_code == 404:
-            print(f"Entry {entry_name} not found (might have been deleted).")
+            print(f"Entry {entry_name} not found (might have been deleted).", flush=True)
             return None
         else:
-            print(f"Error fetching entry {entry_name}: {response.status_code} - {response.text}")
+            print(f"Error fetching entry {entry_name}: {response.status_code} - {response.text}", flush=True)
             return None
     except Exception as e:
-        print(f"Exception fetching entry: {e}")
+        print(f"Exception fetching entry: {e}", flush=True)
         return None
+
+def fetch_actor_from_audit_logs(resource_name, event_timestamp_str):
+    """Correlate metadata event with Cloud Audit Logs to find the principalEmail."""
+    logging_client = cloud_logging.Client(project=PROJECT_ID)
+    
+    # event_timestamp_str is usually in RFC3339 format, e.g., '2026-03-09T14:23:04.507350Z'
+    # We search for audit logs around this time for Dataplex or BigQuery services
+    try:
+        # Parse timestamp safely
+        event_dt = datetime.fromisoformat(event_timestamp_str.replace("Z", "+00:00"))
+        start_time = (event_dt - timedelta(seconds=15)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        end_time = (event_dt + timedelta(seconds=15)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        
+        # Resource name in audit logs for Dataplex is often the internal entry name
+        # For BigQuery, it might be the resource URI
+        filter_str = (
+            f'resource.type="dataplex.googleapis.com" OR resource.type="bigquery_resource" '
+            f'AND timestamp >= "{start_time}" '
+            f'AND timestamp <= "{end_time}" '
+            f'AND (protoPayload.resourceName:"{resource_name}" OR protoPayload.resourceName:"{resource_name.split("/")[-1]}")'
+        )
+        
+        print(f"Searching audit logs with filter: {filter_str}", flush=True)
+        entries = logging_client.list_entries(filter_=filter_str, order_by=cloud_logging.DESCENDING, page_size=5)
+        
+        for entry in entries:
+            auth_info = entry.payload.get("authenticationInfo", {})
+            principal = auth_info.get("principalEmail")
+            if principal:
+                print(f"Found actor in audit logs: {principal}", flush=True)
+                return principal
+                
+        return "system-harvest" # Default if not found (likely background harvest)
+    except Exception as e:
+        print(f"Error fetching actor from logs: {e}", flush=True)
+        return "unknown"
 
 def log_to_bigquery(event_data):
     """Insert the event record into BigQuery."""
@@ -49,21 +87,21 @@ def log_to_bigquery(event_data):
     
     errors = client.insert_rows_json(table_id, [event_data])
     if errors:
-        print(f"Encountered errors while inserting rows: {errors}")
+        print(f"Encountered errors while inserting rows: {errors}", flush=True)
     else:
-        print(f"Logged {event_data.get('change_type')} event for {event_data.get('entry_fqn')} to BigQuery.")
+        print(f"Logged {event_data.get('change_type')} event for {event_data.get('entry_fqn')} to BigQuery.", flush=True)
 
 def callback(message):
     """Pub/Sub message callback."""
-    print(f"\n--- New Notification Received ---")
+    print(f"\n--- New Notification Received ---", flush=True)
     
     try:
         attributes = dict(message.attributes)
-        print(f"Attributes: {attributes}")
+        print(f"Attributes: {attributes}", flush=True)
         
         # The data payload contains aspect change details
         data_json = message.data.decode("utf-8")
-        print(f"Data Payload: {data_json}")
+        print(f"Data Payload: {data_json}", flush=True)
         data = json.loads(data_json) if data_json else {}
         
         # Dataplex uses various names for entry info across attributes and payload
@@ -89,9 +127,9 @@ def callback(message):
                      data.get("entry_type") or 
                      data.get("entryType"))
         
-        print(f"Change Type: {change_type}")
-        print(f"Entry Name (internal): {entry_name}")
-        print(f"Entry FQN: {entry_fqn}")
+        print(f"Change Type: {change_type}", flush=True)
+        print(f"Entry Name (internal): {entry_name}", flush=True)
+        print(f"Entry FQN: {entry_fqn}", flush=True)
         
         changed_aspects = []
         if data:
@@ -113,6 +151,9 @@ def callback(message):
         if changed_aspects:
             summary += f" (Aspects: {', '.join([a.split('/')[-1] for a in changed_aspects])})"
         
+        # Fetch actor from Audit Logs
+        user_email = fetch_actor_from_audit_logs(entry_name, timestamp)
+        
         # Prepare for BQ
         event_record = {
             "event_timestamp": timestamp,
@@ -122,6 +163,7 @@ def callback(message):
             "entry_type": entry_type,
             "changed_aspects": changed_aspects,
             "metadata_snapshot": json.dumps(entry_snapshot) if entry_snapshot else None,
+            "user_email": user_email,
             "summary": summary
         }
         
@@ -129,7 +171,7 @@ def callback(message):
         message.ack()
         
     except Exception as e:
-        print(f"Error processing message: {e}")
+        print(f"Error processing message: {e}", flush=True)
         message.nack()
 
 def listen_for_changes():
@@ -137,7 +179,7 @@ def listen_for_changes():
     subscription_path = subscriber.subscription_path(PROJECT_ID, SUBSCRIPTION_ID)
     
     streaming_pull_future = subscriber.subscribe(subscription_path, callback=callback)
-    print(f"Listening for metadata changes on {subscription_path}...\n")
+    print(f"Listening for metadata changes on {subscription_path}...\n", flush=True)
     
     with subscriber:
         try:
