@@ -4,8 +4,8 @@ from google.protobuf import struct_pb2
 
 # Configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
-LOCATION = "europe-west1"
-DATASET_ID = "retail_synthetic_data"
+LOCATION = os.environ.get("DATAPLEX_LOCATION", "europe-west1")
+DATASET_ID = os.environ.get("BQ_DATASET", "retail_synthetic_data")
 TABLE_ID = "customers"
 ASPECT_TYPE_ID = "data-governance-aspect"
 

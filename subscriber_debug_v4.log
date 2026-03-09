@@ -1,0 +1,29 @@
+Listening for metadata changes on projects/governance-demo-489713/subscriptions/dataplex-metadata-changes-sub...
+
+
+--- New Notification Received ---
+Attributes: {'timestamp': '2026-03-09T15:49:39.736671Z', 'entry_change_type': 'UPDATE', 'feed_name': 'projects/575273989588/locations/europe-west1/metadataFeeds/retail-metadata-feed', 'entry_type': 'projects/655216118709/locations/global/entryTypes/bigquery-table'}
+Data Payload: {"entryName":"projects/575273989588/locations/europe-west1/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/governance-demo-489713/datasets/retail_synthetic_data/tables/products","fullQualifiedName":"bigquery:governance-demo-489713.retail_synthetic_data.products","updatedAspects":["projects/575273989588/locations/europe-west1/aspectTypes/pii-column"]}
+Change Type: UPDATE
+Entry Name (internal): projects/575273989588/locations/europe-west1/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/governance-demo-489713/datasets/retail_synthetic_data/tables/products
+Entry FQN: None
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1773071504.383955 19530601 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+
+--- New Notification Received ---
+Attributes: {'timestamp': '2026-03-09T15:47:59.387135Z', 'entry_change_type': 'UPDATE', 'feed_name': 'projects/575273989588/locations/europe-west1/metadataFeeds/retail-metadata-feed', 'entry_type': 'projects/655216118709/locations/global/entryTypes/bigquery-table'}
+Data Payload: {"entryName":"projects/575273989588/locations/europe-west1/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/governance-demo-489713/datasets/retail_synthetic_data/tables/customers","fullQualifiedName":"bigquery:governance-demo-489713.retail_synthetic_data.customers","updatedAspects":["projects/575273989588/locations/europe-west1/aspectTypes/pii-column"]}
+Change Type: UPDATE
+Entry Name (internal): projects/575273989588/locations/europe-west1/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/governance-demo-489713/datasets/retail_synthetic_data/tables/customers
+Entry FQN: None
+I0000 00:00:1773071504.437082 19530650 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1773071505.206433 19530601 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1773071505.308466 19530650 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+Searching audit logs with filter: (resource.type="dataplex.googleapis.com" OR resource.type="bigquery_resource" OR resource.type="audited_resource") AND timestamp >= "2026-03-09T15:39:39Z" AND timestamp <= "2026-03-09T15:49:54Z" AND (protoPayload.resourceName:"projects/575273989588/locations/europe-west1/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/governance-demo-489713/datasets/retail_synthetic_data/tables/products" OR protoPayload.resourceName:"products" OR protoPayload.resourceName:"bigquery:governance-demo-489713.retail_synthetic_data.products")
+Searching audit logs with filter: (resource.type="dataplex.googleapis.com" OR resource.type="bigquery_resource" OR resource.type="audited_resource") AND timestamp >= "2026-03-09T15:37:59Z" AND timestamp <= "2026-03-09T15:48:14Z" AND (protoPayload.resourceName:"projects/575273989588/locations/europe-west1/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/governance-demo-489713/datasets/retail_synthetic_data/tables/customers" OR protoPayload.resourceName:"customers" OR protoPayload.resourceName:"bigquery:governance-demo-489713.retail_synthetic_data.customers")
+Found actor in audit logs: admin@akankshapb.altostrat.comFound actor in audit logs: admin@akankshapb.altostrat.com
+
+I0000 00:00:1773071507.243417 19530601 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+I0000 00:00:1773071507.248149 19530650 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+Logged UPDATE event for bigquery:governance-demo-489713.retail_synthetic_data.products to BigQuery.
+Logged UPDATE event for bigquery:governance-demo-489713.retail_synthetic_data.customers to BigQuery.

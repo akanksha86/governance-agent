@@ -4,9 +4,9 @@ from google.protobuf import struct_pb2
 
 # Configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
-LOCATION = "europe-west1" # For Aspect Types
-BQ_LOCATION = "europe-west1" # For BigQuery entries
-DATASET_ID = "retail_synthetic_data"
+LOCATION = os.environ.get("DATAPLEX_LOCATION", "europe-west1") # For Aspect Types
+BQ_LOCATION = os.environ.get("BQ_LOCATION", "europe-west1") # For BigQuery entries
+DATASET_ID = os.environ.get("BQ_DATASET", "retail_synthetic_data")
 
 def create_aspect_type():
     client = dataplex_v1.CatalogServiceClient()

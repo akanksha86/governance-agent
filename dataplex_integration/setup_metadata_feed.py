@@ -7,10 +7,10 @@ from google.api_core import exceptions
 
 # Configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
-LOCATION = "europe-west1"
-TOPIC_ID = "dataplex-metadata-changes"
-SUBSCRIPTION_ID = "dataplex-metadata-changes-sub"
-FEED_ID = "retail-metadata-feed"
+LOCATION = os.environ.get("DATAPLEX_LOCATION", "europe-west1")
+TOPIC_ID = os.environ.get("METADATA_TOPIC_ID", "dataplex-metadata-changes")
+SUBSCRIPTION_ID = os.environ.get("METADATA_SUBSCRIPTION_ID", "dataplex-metadata-changes-sub")
+FEED_ID = os.environ.get("METADATA_FEED_ID", "retail-metadata-feed")
 
 def get_access_token():
     credentials, project = google.auth.default()

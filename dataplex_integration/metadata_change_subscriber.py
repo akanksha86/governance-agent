@@ -10,9 +10,9 @@ from datetime import datetime, timedelta
 
 # Configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
-SUBSCRIPTION_ID = "dataplex-metadata-changes-sub"
-BQ_DATASET = "governance_export"
-BQ_TABLE = "metadata_changes"
+SUBSCRIPTION_ID = os.environ.get("METADATA_SUBSCRIPTION_ID", "dataplex-metadata-changes-sub")
+BQ_DATASET = os.environ.get("METADATA_BQ_DATASET", "governance_export")
+BQ_TABLE = os.environ.get("METADATA_BQ_TABLE", "metadata_changes")
 
 def get_access_token():
     credentials, project = google.auth.default()
@@ -40,29 +40,39 @@ def fetch_dataplex_entry(entry_name):
         print(f"Exception fetching entry: {e}", flush=True)
         return None
 
-def fetch_actor_from_audit_logs(resource_name, event_timestamp_str):
+def fetch_actor_from_audit_logs(resource_name, event_timestamp_str, entry_fqn=None):
     """Correlate metadata event with Cloud Audit Logs to find the principalEmail."""
     logging_client = cloud_logging.Client(project=PROJECT_ID)
     
     # event_timestamp_str is usually in RFC3339 format, e.g., '2026-03-09T14:23:04.507350Z'
-    # We search for audit logs around this time for Dataplex or BigQuery services
+    # Notifications can be delayed by several minutes, so we search backwards a bit more.
     try:
         # Parse timestamp safely
         event_dt = datetime.fromisoformat(event_timestamp_str.replace("Z", "+00:00"))
-        start_time = (event_dt - timedelta(seconds=15)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        # Looking back 10 minutes to account for notification latency
+        start_time = (event_dt - timedelta(minutes=10)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        # Include a small buffer after the event just in case clocks are slightly off
         end_time = (event_dt + timedelta(seconds=15)).strftime('%Y-%m-%dT%H:%M:%SZ')
         
-        # Resource name in audit logs for Dataplex is often the internal entry name
-        # For BigQuery, it might be the resource URI
+        entry_id = resource_name.split("/")[-1]
+        
+        # Build filter with proper precedence and multiple resource hints
+        # We search for the full resource name, the short ID, or the FQN
+        resource_match = [f'protoPayload.resourceName:"{resource_name}"', f'protoPayload.resourceName:"{entry_id}"']
+        if entry_fqn:
+            resource_match.append(f'protoPayload.resourceName:"{entry_fqn}"')
+            
+        resource_filter = " OR ".join(resource_match)
+        
         filter_str = (
-            f'resource.type="dataplex.googleapis.com" OR resource.type="bigquery_resource" '
+            f'(resource.type="dataplex.googleapis.com" OR resource.type="bigquery_resource" OR resource.type="audited_resource") '
             f'AND timestamp >= "{start_time}" '
             f'AND timestamp <= "{end_time}" '
-            f'AND (protoPayload.resourceName:"{resource_name}" OR protoPayload.resourceName:"{resource_name.split("/")[-1]}")'
+            f'AND ({resource_filter})'
         )
         
         print(f"Searching audit logs with filter: {filter_str}", flush=True)
-        entries = logging_client.list_entries(filter_=filter_str, order_by=cloud_logging.DESCENDING, page_size=5)
+        entries = logging_client.list_entries(filter_=filter_str, order_by=cloud_logging.DESCENDING, page_size=10)
         
         for entry in entries:
             auth_info = entry.payload.get("authenticationInfo", {})
@@ -152,7 +162,7 @@ def callback(message):
             summary += f" (Aspects: {', '.join([a.split('/')[-1] for a in changed_aspects])})"
         
         # Fetch actor from Audit Logs
-        user_email = fetch_actor_from_audit_logs(entry_name, timestamp)
+        user_email = fetch_actor_from_audit_logs(entry_name, timestamp, entry_fqn)
         
         # Prepare for BQ
         event_record = {

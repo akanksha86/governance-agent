@@ -3,7 +3,7 @@ from google.cloud import bigquery
 
 # Configuration
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
-DATASET_ID = "retail_synthetic_data"
+DATASET_ID = os.environ.get("BQ_DATASET", "retail_synthetic_data")
 TABLE_ID = "customers"
 
 def add_column_to_table():
