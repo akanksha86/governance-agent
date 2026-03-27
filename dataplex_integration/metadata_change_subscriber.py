@@ -22,6 +22,14 @@ def get_access_token():
 
 def fetch_dataplex_entry(entry_name):
     """Fetch the current state of an entry from Dataplex."""
+    # Dataplex Catalog v1 REST API rejects GET requests where the entry ID is a UUID.
+    # We must skip calling it to prevent 400 Bad Request spam.
+    entry_id = entry_name.split("/")[-1]
+    import re
+    if re.match(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$', entry_id):
+        print(f"Skipping API fetch for entry {entry_name}: Entry ID is a UUID (not supported by direct GET)", flush=True)
+        return None
+
     access_token = get_access_token()
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://dataplex.googleapis.com/v1/{entry_name}?view=ALL"
@@ -148,6 +156,15 @@ def callback(message):
             changed_aspects.extend(data.get("updatedAspects", []))
             changed_aspects.extend(data.get("deletedAspects", []))
             
+        # Debugging hook: if Dataplex doesn't provide FQN in the usual fields, dump the payload.
+        if not entry_fqn:
+            print(f"DEBUG: Missing Entry FQN. Raw payload data: {json.dumps(data, indent=2)}")
+            # Attempt to extract from 'entry' object if nested
+            nested_entry = data.get("entry", {})
+            entry_fqn = nested_entry.get("fullyQualifiedName") or nested_entry.get("name")
+            if entry_fqn:
+                print(f"Recovered Entry FQN from nested payload: {entry_fqn}", flush=True)
+
         # Fetch current state of the entry (if not deleted and entry_name is present)
         entry_snapshot = None
         if change_type != "DELETED" and entry_name:
